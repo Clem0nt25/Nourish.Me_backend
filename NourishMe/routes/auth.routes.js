@@ -1,9 +1,8 @@
 const bcryptjs = require("bcryptjs");
 const User = require("../models/User.model");
 const jwt = require("jsonwebtoken");
-// const { isAuthenticated } = require("../middleware/jwt.middleware"); Add this later
-
 const router = require("express").Router();
+// const { isAuthenticated } = require("../middleware/jwt.middleware"); Add this later
 
 // ******* SIGNUP ROUTE *******
 router.post("/signup", async (req, res) => {
@@ -39,7 +38,7 @@ router.post("/login", async (req, res) => {
           expiresIn: "6h",
         }
       );
-      res.status(200).json(authToken);
+      res.status(200).json({ message: "Login successful", token: authToken });
     } else {
       res.status(401).json({ message: "Incorrect password" });
     }
@@ -49,14 +48,23 @@ router.post("/login", async (req, res) => {
 });
 
 // ******* VERIFY ROUTE *******
-router.get("/verify/:userId", async (req, res) => {
-  // isAuthenticated later
-  const user = await User.findById(req.params.userId);
-  if (user) {
-    res.status(200).json({ message: "User is authenticated", user });
-  } else {
-    res.status(404).json({ message: "User not found" });
+router.get(
+  "/verify/:userId",
+  /*isAuthenticated,*/ async (req, res) => {
+    const user = await User.findById(req.params.userId);
+    if (user) {
+      const userToReturn = {
+        _id: user._id,
+        email: user.email,
+        // other NOT SENSITIVE data to reveal to client
+      };
+      res
+        .status(200)
+        .json({ message: "User is authenticated", user: userToReturn });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
   }
-});
+);
 
 module.exports = router;
