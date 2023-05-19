@@ -27,17 +27,13 @@ const foodSchema = new Schema(
             type: Number,
             required: true,
         },
-        kcal: {
-            type: Number,
-            required: true,
-        },
         carbs: {
             type: Number,
             required: true,
         },
-        foodtype: {
+        foodType: {
             type: String,
-            enum: ['vegan', 'vegetarian', 'meat', 'fish', 'dairy'],
+            enum: ['vegan', 'vegetarian'],
         },
         mealId: {
             type: Schema.Types.ObjectId,
