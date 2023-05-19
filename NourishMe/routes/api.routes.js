@@ -47,11 +47,11 @@ router.post("/getFood", async (req, res) => {
 
 router.post("/getFoodByBarcode", async (req, res) => {
     try {
-        const {barcode, amount, mealType} = req.body;
+        const {currentDate, barcode, amount, mealType} = req.body;
 
-        console.log(barcode, amount, mealType)
+        console.log(currentDate, barcode, amount, mealType)
 
-        // make api call 
+        // make api call to get food from barcode
         const apiData = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
         const product = apiData.data.product;
         const name = product.product_name || product.brands;
@@ -68,6 +68,7 @@ router.post("/getFoodByBarcode", async (req, res) => {
         
         console.log(productData);
         console.log(product.ingredients_analysis)
+
 
 
 
