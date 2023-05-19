@@ -76,9 +76,9 @@ router.post("/getFoodByBarcode", isAuthenticated, async (req, res) => {
 
 // simple route that checks if user already has a UserSpecs document in the database
 
-router.get("/checkUserSpecs", isAuthenticated, async (req, res) => {
+router.get("/checkUserSpecs/:id", isAuthenticated, async (req, res) => {
     try {
-        const userSpecs = await UserSpecs.findOne({ userId: req.body.userId });
+        const userSpecs = await UserSpecs.findOne({ userId: req.params.id });
         if (userSpecs) {
             res.status(200).json({ message: "User specs found", data: userSpecs });
         } else {
