@@ -25,14 +25,14 @@ router.post("/getFood", async (req, res) => {
                 image: allProdcuts[i].image_front_small_url,
                 barcode: allProdcuts[i]._id
             }
-
+            
             foodData.push(food);
         }
 
         console.log(foodData);
 
         // return api data to frontend
-        res.status(200).json({ message: "Food data retrieved", data: apiData.data});
+        res.status(200).json({ message: "Food data retrieved", data: foodData});
 
     } catch (error) {
         console.error(error);
