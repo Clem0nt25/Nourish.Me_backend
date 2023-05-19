@@ -46,7 +46,7 @@ router.post("/getFood", async (req, res) => {
 
 router.post("/getFoodByBarcode", isAuthenticated, async (req, res) => {
     try {
-        const [barcode, amount] = req.auth;
+        const [barcode, amount, mealType] = req.auth;
 
         // make api call 
         const apiData = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
