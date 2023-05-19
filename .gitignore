@@ -21,3 +21,5 @@ ehthumbs.db
 
 # VS Code
 .vscode/*
+*.code-workspace
+
