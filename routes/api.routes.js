@@ -1,7 +1,11 @@
 const router = require("express").Router();
 const { isAuthenticated } = require("../middleware/jwt.middleware");
+const { Meal } = require("../models/Meal.model");
 const axios = require("axios");
+const mongoose = require("mongoose");
 
+
+// search route
 router.post("/getFood", async (req, res) => {
 
     console.log(req.body);
@@ -47,15 +51,37 @@ router.post("/getFood", async (req, res) => {
 
 router.post("/getFoodByBarcode", async (req, res) => {
     try {
-        const {currentDate, barcode, amount, mealType} = req.body;
+        const {currentDate, barcode, amount, mealType, userId} = req.body;
 
-        console.log(currentDate, barcode, amount, mealType)
+        console.log(currentDate, barcode, amount, mealType, userId)
+
+        console.log("----------------------------------------------------------------------")
+        console.log(Meal)
 
         // make api call to get food from barcode
         const apiData = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
         const product = apiData.data.product;
         const name = product.product_name || product.brands;
   
+        // check if user has meal for this day already
+
+        const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
+
+        // if meal does not exist, create meal
+        if (!meal) {
+            const newMeal = await Meal.create({
+                food: [product],
+                userId: userId,
+                category: mealType,
+                date: currentDate
+            });
+        }
+
+
+        console.log(meal);
+
+
+
 
         const productData = {
             foodName: name,
