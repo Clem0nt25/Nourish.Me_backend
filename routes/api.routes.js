@@ -63,6 +63,22 @@ router.post("/getFoodByBarcode", async (req, res) => {
         const product = apiData.data.product;
         const name = product.product_name || product.brands;
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
         // check if user has meal for this day already
 
         const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
