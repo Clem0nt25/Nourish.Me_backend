@@ -20,7 +20,6 @@ const mealSchema = new Schema(
     date: {
       type: String,
       required: true,
-      default: () => new Date().toISOString().split('T')[0]
     },
   }
 );

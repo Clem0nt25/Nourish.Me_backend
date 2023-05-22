@@ -31,13 +31,13 @@ const foodSchema = new Schema(
             type: Number,
             required: true,
         },
-        foodType: {
-            type: String,
-            enum: ['vegan', 'vegetarian'],
-        },
         mealId: {
-            type: Schema.Types.ObjectId,
-            ref: 'Meal',
+            type: Number,
+            default: 0,
+        },
+        date: {
+            type: String,
+            required: true,
         },
     }
 )

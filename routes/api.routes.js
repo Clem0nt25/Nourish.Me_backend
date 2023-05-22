@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const { Meal } = require("../models/Meal.model");
+const { Food } = require("../models/Food.model");
 const axios = require("axios");
 const mongoose = require("mongoose");
 
@@ -53,15 +54,72 @@ router.post("/getFoodByBarcode", async (req, res) => {
     try {
         const {currentDate, barcode, amount, mealType, userId} = req.body;
 
-        console.log(currentDate, barcode, amount, mealType, userId)
-
-        console.log("----------------------------------------------------------------------")
-        console.log(Meal)
-
-        // make api call to get food from barcode
+        // 1) make api call to retrieve food data from barcode
         const apiData = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
         const product = apiData.data.product;
         const name = product.product_name || product.brands;
+
+        // 1.1) create food object from api data
+        const productData = {
+            foodName: name,
+            barcode: product._id,
+            calories: product.nutriments['energy-kcal_100g'] / 100 * amount || 0,
+            protein: product.nutriments.proteins_100g / 100 * amount || 0,
+            fiber: product.nutriments.fiber_100g / 100 * amount || 0,
+            carbs: product.nutriments.carbohydrates_100g / 100 * amount || 0,
+            date: currentDate,
+        };
+
+        // 1.2) save food object to database with food model
+
+        // check if food object based on barcode and date already exists in database
+        const food = await Food.findOne({ barcode: barcode, date: currentDate });
+
+        // if food object does not exist, create food object
+        if(!food) {
+            const newFood = await Food.create(productData);
+        } else {
+            // update food object in database
+            const updatedFood = await Food.findOneAndUpdate(
+                { barcode: barcode, date: currentDate }, 
+                {
+                    $inc: {
+                        calories: productData.calories,
+                        protein: productData.protein,
+                        fiber: productData.fiber,
+                        carbs: productData.carbs
+                    }
+                }, 
+                { new: true }
+            );
+        }
+
+        // 2) create meal object from barcode for food, userId, category from mealType a currentDate
+        // first check if meal for this day already exists based on currentDate, userId and mealType
+        const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
+        
+        // if meal does not exist, create meal object
+        if(!meal) {
+            const newMeal = await Meal.create({
+                food: [barcode],
+                userId: userId,
+                category: mealType,
+                date: currentDate
+            })} else {
+                // if meal exists, update meal object and add barcode to food array
+                const updatedMeal = await Meal.findOneAndUpdate(
+                    { userId: userId, date: currentDate, category: mealType },
+                    { $push: { food: barcode } },
+                    { new: true }
+                );
+        }
+
+
+
+        
+
+
+        
   
 
 
@@ -78,10 +136,10 @@ router.post("/getFoodByBarcode", async (req, res) => {
 
 
 
-        
+
         // check if user has meal for this day already
 
-        const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
+        /*const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
 
         // if meal does not exist, create meal
         if (!meal) {
@@ -92,24 +150,12 @@ router.post("/getFoodByBarcode", async (req, res) => {
                 date: currentDate
             });
         }
-
-
-        console.log(meal);
-
+        */
 
 
 
-        const productData = {
-            foodName: name,
-            barcode: product._id,
-            calories: product.nutriments['energy-kcal_100g'] / 100 * amount || 0,
-            protein: product.nutriments.proteins_100g / 100 * amount || 0,
-            fiber: product.nutriments.fiber_100g / 100 * amount || 0,
-            carbs: product.nutriments.carbohydrates_100g / 100 * amount || 0,
-        };
-        
-        console.log(productData);
-        console.log(product.ingredients_analysis)
+
+
 
 
 
