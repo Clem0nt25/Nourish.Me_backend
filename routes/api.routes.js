@@ -46,9 +46,6 @@ router.post("/getFood", async (req, res) => {
 
 });
 
-// make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
-
-
 
 router.post("/getFoodByBarcode", async (req, res) => {
     try {
