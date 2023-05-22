@@ -217,12 +217,47 @@ router.get("/getUserHistory/:id", async (req, res) => {
         const newUserSpecsHistory = await UserSpecsHistory.create(userSpecsHistoryData);
 
 
-    } else { console.log("UserSpecsHistory document already exists") }
+    } else {
+
+        // find latest UserSpecsCurrent document for current user by userid and latest date
+        const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId }).sort({ date: -1 });
+        const meals = await Meal.find({date: currentDate, userId: userId});
+        
+        // create array of mealIds
+        const mealIds = meals.map(meal => meal._id);
+        console.log(mealIds);
+
+        // query Food Model for all food objects with mealIds from mealIds array
+        const foods = await Food.find({ mealId: { $in: mealIds } });
+        console.log(foods);
+
+        // map over foods array create new object where total calories, protein, fiber and carbs are calculated from all foods
+        const totalCalories = foods.reduce((acc, food) => acc + food.calories, 0);
+        const totalProtein = foods.reduce((acc, food) => acc + food.protein, 0);
+        const totalFiber = foods.reduce((acc, food) => acc + food.fiber, 0);
+        const totalCarbs = foods.reduce((acc, food) => acc + food.carbs, 0);
+
+        // update userSpecsHistory document with new data
+        const userSpecsHistoryData = {
+            userId: userId,
+            date: currentDate,
+            currentCalories: totalCalories,
+            currentProtein: totalProtein,
+            currentFiber: totalFiber,
+            currentCarbs: totalCarbs,
+            activityLevel: userSpecsCurrent.activityLevel,
+            currentWeight: userSpecsCurrent.currentWeight,
+            goalCalories: userSpecsCurrent.goalCalories,
+            goalProtein: userSpecsCurrent.goalProtein,
+            goalFiber: userSpecsCurrent.goalFiber,
+            goalCarbs: userSpecsCurrent.goalCarbs,
+        }
 
 
-
-
-
+        const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+            { userId: userId, date: currentDate }, { $set: userSpecsHistoryData }, { new: true }
+        );
+    }
 
 });
 
