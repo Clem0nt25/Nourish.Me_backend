@@ -1,6 +1,28 @@
 const { Schema, model } = require("mongoose");
 
-const userSpecsHistorySchema = new Schema({
+const userSpecsCurrentSchema = new Schema({
+	username: {
+		type: String,
+		default: "New Nourish User",
+	},
+	gender: {
+		type: String,
+		enum: ["female", "male"],
+		require: true,
+	},
+	yearOfBirth: {
+		type: Number,
+		require: true,
+	},
+	height: {
+		type: Number,
+		require: true,
+	},
+	mainGoal: {
+		type: String,
+		enum: ["bulk-up", "get-strong", "recompose", "get-lean", "keep-shape"],
+		require: true,
+	},
 	activityLevel: {
 		type: String,
 		enum: ["sedentary", "light", "moderate", "active", "intense"],
@@ -9,6 +31,15 @@ const userSpecsHistorySchema = new Schema({
 	currentWeight: {
 		type: Number,
 		required: true,
+	},
+	goalWeight: {
+		type: Number,
+		required: true,
+	},
+	weightChangePerWeek: {
+		type: String,
+		enum: ["0.25kg", "0.5kg", "0.75kg", "skip"],
+		require: true,
 	},
 	currentCalories: {
 		type: Number,
@@ -69,5 +100,5 @@ const userSpecsHistorySchema = new Schema({
 	},
 });
 
-const UserSpecsHistory = model("UserSpecsHistory", userSpecsHistorySchema);
-module.exports = UserSpecsHistory;
+const UserSpecsCurrent = model("UserSpecsCurrent", userSpecsCurrentSchema);
+module.exports = UserSpecsCurrent;
