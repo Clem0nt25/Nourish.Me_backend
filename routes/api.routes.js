@@ -4,6 +4,7 @@ const { Meal } = require("../models/Meal.model");
 const { Food } = require("../models/Food.model");
 const axios = require("axios");
 const mongoose = require("mongoose");
+const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
 
 // search route
 router.post("/getFood", async (req, res) => {
@@ -132,9 +133,20 @@ router.post("/getFoodByBarcode", async (req, res) => {
 	}
 });
 
-// simple route that checks if user already has a UserSpecs document in the database
+router.post("/createUserSpecsCurrent/:id", async (req, res) => {
+	try {
+		await UserSpecsCurrent.create(req.body);
+		res.status(201).json({ message: "User specs current created" });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Internal server error", error });
+	}
+});
 
-router.get("/checkUserSpecs/:id", isAuthenticated, async (req, res) => {
+//route that get the UserSpecsCurrent document in the database
+
+router.get("/checkUserSpecs/:id", async (req, res) => {
+	console.log("hello");
 	try {
 		const userSpecs = await UserSpecsCurrent.findOne({ userId: req.params.id });
 		if (userSpecs) {
