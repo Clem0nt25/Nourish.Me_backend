@@ -1,14 +1,17 @@
 const { Schema, model } = require("mongoose");
 
-const userSpecsHistorySchema = new Schema({
+const userSpecsHistorySchema = new Schema(
+	{
 	activityLevel: {
 		type: String,
 		enum: ["sedentary", "light", "moderate", "active", "intense"],
 		require: true,
+		default: "light"
 	},
 	currentWeight: {
 		type: Number,
 		required: true,
+		default: 0,
 	},
 	currentCalories: {
 		type: Number,
@@ -18,6 +21,7 @@ const userSpecsHistorySchema = new Schema({
 	goalCalories: {
 		type: Number,
 		required: true,
+		default: 0,
 	},
 	currentProtein: {
 		type: Number,
@@ -27,6 +31,7 @@ const userSpecsHistorySchema = new Schema({
 	goalProtein: {
 		type: Number,
 		required: true,
+		default: 0,
 	},
 	currentCarbs: {
 		type: Number,
@@ -36,16 +41,7 @@ const userSpecsHistorySchema = new Schema({
 	goalCarbs: {
 		type: Number,
 		required: true,
-	},
-	currentFat: {
-		type: Number,
-		required: true,
 		default: 0,
-	},
-	goalFat: {
-		type: Number,
-		required: true,
-		default: 70,
 	},
 	currentFiber: {
 		type: Number,
@@ -60,11 +56,9 @@ const userSpecsHistorySchema = new Schema({
 	date: {
 		type: String,
 		required: true,
-		default: () => new Date().toISOString().split("T")[0],
 	},
 	userId: {
-		type: Schema.Types.ObjectId,
-		ref: "User",
+		type: String,
 		required: true,
 	},
 });

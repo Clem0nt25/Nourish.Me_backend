@@ -2,9 +2,10 @@ const router = require("express").Router();
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const { Meal } = require("../models/Meal.model");
 const { Food } = require("../models/Food.model");
-const { UserSpecsHistory } = require("../models/UserSpecsHistory.model");
+const UserSpecsHistory = require("../models/UserSpecsHistory.model");
 const axios = require("axios");
 const mongoose = require("mongoose");
+const User = require("../models/User.model");
 
 
 // search route
@@ -164,34 +165,61 @@ router.get("/getUserHistory/:id", async (req, res) => {
 
     // get current date in format YYYY-MM-DD and userId from params
     const currentDate = new Date().toISOString().slice(0, 10);
-    const userId = req.params.id;
+    // const userId = req.params.id;
+    const userId = "123456789"
 
-    console.log(UserSpecsHistory);
+    console.log(currentDate, userId);
+    console.log(UserSpecsHistory)
 
-    const userSpecHistory = await UserSpecsHistory.findOne({ userId: userId, date: currentDate });
-    try {
-
-        // check if userSpecHistory for this date already exists
+    // check if current user already has a userSpecsHistory document for the current date
+    const userSpecsHistory = await UserSpecsHistory.findOne({ userId: userId, date: currentDate });
+    
+    // if userSpecsHistory document does not exist, query Meal Model for all mealIds for the current date and userId
+    if (!userSpecsHistory) {
+        const meals = await Meal.find({date: currentDate, userId: userId});
         
+        // create array of mealIds
+        const mealIds = meals.map(meal => meal._id);
+        console.log(mealIds);
 
-        // if userSpecHistory does not exist, create it
-        if (!userSpecHistory) {
-            // get all mealIds from meal for this date and userId
-            const meals = await Meal.find({ userId: userId, date: currentDate });
+        // query Food Model for all food objects with mealIds from mealIds array
+        const foods = await Food.find({ mealId: { $in: mealIds } });
+        console.log(foods);
 
-            // get all food objects for mealIds 
-            const foods = await Food.find({ mealId: { $in: meals } });
-            console.log("This is food data");
-            console.log(foods);
+        // map over foods array create new object where total calories, protein, fiber and carbs are calculated from all foods
+        const totalCalories = foods.reduce((acc, food) => acc + food.calories, 0);
+        const totalProtein = foods.reduce((acc, food) => acc + food.protein, 0);
+        const totalFiber = foods.reduce((acc, food) => acc + food.fiber, 0);
+        const totalCarbs = foods.reduce((acc, food) => acc + food.carbs, 0);
 
-        } else {
-            console.log("UserSpecHistory already exists");
+        // find latest UserSpecsCurrent document for current user by userid and latest date
+        const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId }).sort({ date: -1 });
+
+
+        const userSpecsHistoryData = {
+            userId: userId,
+            date: currentDate,
+            currentCalories: totalCalories,
+            currentProtein: totalProtein,
+            currentFiber: totalFiber,
+            currentCarbs: totalCarbs,
+            activityLevel: userSpecsCurrent.activityLevel,
+            currentWeight: userSpecsCurrent.currentWeight,
+            goalCalories: userSpecsCurrent.goalCalories,
+            goalProtein: userSpecsCurrent.goalProtein,
+            goalFiber: userSpecsCurrent.goalFiber,
+            goalCarbs: userSpecsCurrent.goalCarbs,
         }
 
-        
-    } catch (error) {
-        console.error(error);
-    }
+        console.log(userSpecsHistoryData);
+
+        // create new UserSpecsHistory document with data from userSpecsHistoryData object
+        const newUserSpecsHistory = await UserSpecsHistory.create(userSpecsHistoryData);
+
+
+    } else { console.log("UserSpecsHistory document already exists") }
+
+
 
 
 
