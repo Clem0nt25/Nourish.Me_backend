@@ -59,6 +59,35 @@ router.post("/getFoodByBarcode", async (req, res) => {
         const product = apiData.data.product;
         const name = product.product_name || product.brands;
 
+        // 2) create meal object from barcode for food, userId, category from mealType a currentDate
+        // first check if meal for this day already exists based on currentDate, userId and mealType
+        const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
+        let mealId;
+
+        // if meal does not exist, create meal object
+
+        if(!meal) {
+            const newMeal = await Meal.create({
+                food: [barcode],
+                userId: userId,
+                category: mealType,
+                date: currentDate
+            })
+
+            mealId = newMeal._id;
+        
+        } else {
+                // if meal exists, update meal object and add barcode to food array
+                const updatedMeal = await Meal.findOneAndUpdate(
+                    { userId: userId, date: currentDate, category: mealType },
+                    { $push: { food: barcode } },
+                    { new: true }
+                );
+
+                mealId = updatedMeal._id;
+        }
+
+
         // 1.1) create food object from api data
         const productData = {
             foodName: name,
@@ -68,12 +97,13 @@ router.post("/getFoodByBarcode", async (req, res) => {
             fiber: product.nutriments.fiber_100g / 100 * amount || 0,
             carbs: product.nutriments.carbohydrates_100g / 100 * amount || 0,
             date: currentDate,
+            mealId: mealId
         };
 
         // 1.2) save food object to database with food model
 
         // check if food object based on barcode and date already exists in database
-        const food = await Food.findOne({ barcode: barcode, date: currentDate });
+        const food = await Food.findOne({ mealId: mealId });
 
         // if food object does not exist, create food object
         if(!food) {
@@ -94,84 +124,8 @@ router.post("/getFoodByBarcode", async (req, res) => {
             );
         }
 
-        // 2) create meal object from barcode for food, userId, category from mealType a currentDate
-        // first check if meal for this day already exists based on currentDate, userId and mealType
-        const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
-        
-        // if meal does not exist, create meal object
-        if(!meal) {
-            const newMeal = await Meal.create({
-                food: [barcode],
-                userId: userId,
-                category: mealType,
-                date: currentDate
-            })} else {
-                // if meal exists, update meal object and add barcode to food array
-                const updatedMeal = await Meal.findOneAndUpdate(
-                    { userId: userId, date: currentDate, category: mealType },
-                    { $push: { food: barcode } },
-                    { new: true }
-                );
-        }
-
-
-
-        
-
-
-        
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // check if user has meal for this day already
-
-        /*const meal = await Meal.findOne({ userId: userId, date: currentDate, category: mealType });
-
-        // if meal does not exist, create meal
-        if (!meal) {
-            const newMeal = await Meal.create({
-                food: [product],
-                userId: userId,
-                category: mealType,
-                date: currentDate
-            });
-        }
-        */
-
-
-
-
-
-
-
-
-
-
-        // save data to database - food model
-
-        // create meal in database 
-
-        // create daily spec in database
-
-
-
-
         // return api data to frontend
-        res.status(200);
+        res.status(200).json({ message: "Product data retrieved", data: productData});
 
     } catch (error) {
         console.error(error);

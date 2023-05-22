@@ -31,9 +31,10 @@ const foodSchema = new Schema(
             type: Number,
             required: true,
         },
+        // mealId from Meal.model.js
         mealId: {
-            type: Number,
-            default: 0,
+            type: Schema.Types.ObjectId,
+            ref: 'Meal',
         },
         date: {
             type: String,
