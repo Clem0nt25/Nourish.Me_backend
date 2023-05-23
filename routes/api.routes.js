@@ -138,7 +138,7 @@ router.post("/getFoodByBarcode", async (req, res) => {
 	}
 });
 
-// simple route that checks if user already has a UserSpecs document in the database
+// simple route to create a UserSpecs document in the database
 
 router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 	try {
