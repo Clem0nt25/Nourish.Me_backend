@@ -78,7 +78,7 @@ router.post("/getFood", function _callee(req, res) {
 }); // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
 
 router.post("/getFoodByBarcode", function _callee2(req, res) {
-  var _req$body, currentDate, barcode, amount, mealType, userId, apiData, product, name, meal, mealId, newMeal, updatedMeal, productData, food, newFood, updatedFood;
+  var _req$body, currentDate, barcode, amount, mealType, userId, apiData, product, name, meal, mealId, newMeal, updatedMeal, productData, newFood;
 
   return regeneratorRuntime.async(function _callee2$(_context2) {
     while (1) {
@@ -152,64 +152,47 @@ router.post("/getFoodByBarcode", function _callee2(req, res) {
             protein: product.nutriments.proteins_100g / 100 * amount || 0,
             fiber: product.nutriments.fiber_100g / 100 * amount || 0,
             carbs: product.nutriments.carbohydrates_100g / 100 * amount || 0,
+            fat: product.nutriments.fat_100g / 100 * amount || 0,
             amount: amount,
             date: currentDate,
             mealId: mealId
           }; // 1.2) save food object to database with food model
-          // check if food object based on barcode and date already exists in database
+          // check if food object based on barcode, date, and mealId already exists in database
+          // const food = await Food.findOne({ mealId: mealId, barcode: barcode });
+          // // if food object does not exist, create food object
+          // if (!food) {
 
           _context2.next = 24;
-          return regeneratorRuntime.awrap(Food.findOne({
-            mealId: mealId
-          }));
-
-        case 24:
-          food = _context2.sent;
-
-          if (food) {
-            _context2.next = 31;
-            break;
-          }
-
-          _context2.next = 28;
           return regeneratorRuntime.awrap(Food.create(productData));
 
-        case 28:
+        case 24:
           newFood = _context2.sent;
-          _context2.next = 34;
-          break;
-
-        case 31:
-          _context2.next = 33;
-          return regeneratorRuntime.awrap(Food.findOneAndUpdate({
-            barcode: barcode,
-            date: currentDate
-          }, {
-            $inc: {
-              calories: productData.calories,
-              protein: productData.protein,
-              fiber: productData.fiber,
-              carbs: productData.carbs
-            }
-          }, {
-            "new": true
-          }));
-
-        case 33:
-          updatedFood = _context2.sent;
-
-        case 34:
+          // } else {
+          //   // update food object in database
+          //   const updatedFood = await Food.findOneAndUpdate(
+          //     { barcode: barcode, date: currentDate },
+          //     {
+          //       $inc: {
+          //         calories: productData.calories,
+          //         protein: productData.protein,
+          //         fiber: productData.fiber,
+          //         carbs: productData.carbs,
+          //       },
+          //     },
+          //     { new: true }
+          //   );
+          // }
           // return api data to frontend
           console.log("Sending data to frontend");
           res.status(200).json({
             message: "Product data retrieved",
             data: productData
           });
-          _context2.next = 42;
+          _context2.next = 33;
           break;
 
-        case 38:
-          _context2.prev = 38;
+        case 29:
+          _context2.prev = 29;
           _context2.t0 = _context2["catch"](0);
           console.error(_context2.t0);
           res.status(500).json({
@@ -217,12 +200,12 @@ router.post("/getFoodByBarcode", function _callee2(req, res) {
             error: _context2.t0
           });
 
-        case 42:
+        case 33:
         case "end":
           return _context2.stop();
       }
     }
-  }, null, null, [[0, 38]]);
+  }, null, null, [[0, 29]]);
 }); // Get meals and specific food data for each meal
 
 router.get("/getUserDiary", function _callee4(req, res) {

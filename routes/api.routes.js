@@ -97,6 +97,7 @@ router.post("/getFoodByBarcode", async (req, res) => {
       protein: (product.nutriments.proteins_100g / 100) * amount || 0,
       fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
       carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
+      fat: (product.nutriments.fat_100g / 100) * amount || 0,
       amount: amount,
       date: currentDate,
       mealId: mealId,
@@ -104,27 +105,27 @@ router.post("/getFoodByBarcode", async (req, res) => {
 
     // 1.2) save food object to database with food model
 
-    // check if food object based on barcode and date already exists in database
-    const food = await Food.findOne({ mealId: mealId });
+    // check if food object based on barcode, date, and mealId already exists in database
+    // const food = await Food.findOne({ mealId: mealId, barcode: barcode });
 
-    // if food object does not exist, create food object
-    if (!food) {
-      const newFood = await Food.create(productData);
-    } else {
-      // update food object in database
-      const updatedFood = await Food.findOneAndUpdate(
-        { barcode: barcode, date: currentDate },
-        {
-          $inc: {
-            calories: productData.calories,
-            protein: productData.protein,
-            fiber: productData.fiber,
-            carbs: productData.carbs,
-          },
-        },
-        { new: true }
-      );
-    }
+    // // if food object does not exist, create food object
+    // if (!food) {
+    const newFood = await Food.create(productData);
+    // } else {
+    //   // update food object in database
+    //   const updatedFood = await Food.findOneAndUpdate(
+    //     { barcode: barcode, date: currentDate },
+    //     {
+    //       $inc: {
+    //         calories: productData.calories,
+    //         protein: productData.protein,
+    //         fiber: productData.fiber,
+    //         carbs: productData.carbs,
+    //       },
+    //     },
+    //     { new: true }
+    //   );
+    // }
 
     // return api data to frontend
 
