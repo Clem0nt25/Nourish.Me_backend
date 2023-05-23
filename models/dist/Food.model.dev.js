@@ -7,6 +7,9 @@ var _require = require("mongoose"),
     model = _require.model;
 
 var foodSchema = new Schema({
+  idToCheckFoodExists: {
+    type: String
+  },
   foodName: {
     type: String,
     required: true
@@ -44,7 +47,8 @@ var foodSchema = new Schema({
     type: String,
     required: true
   },
-  amount: Number
+  amount: Number,
+  image: String
 });
 var Food = model("Food", foodSchema);
 exports.Food = Food;

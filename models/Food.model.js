@@ -5,6 +5,7 @@
 const { Schema, model } = require("mongoose");
 
 const foodSchema = new Schema({
+  idToCheckFoodExists: { type: String },
   foodName: {
     type: String,
     required: true,
@@ -43,6 +44,7 @@ const foodSchema = new Schema({
     required: true,
   },
   amount: Number,
+  image: String,
 });
 
 const Food = model("Food", foodSchema);

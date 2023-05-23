@@ -7,6 +7,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const User = require("../models/User.model");
 const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
+const uuid = require("uuid");
 
 // search route
 router.post("/getFood", async (req, res) => {
@@ -49,25 +50,28 @@ router.post("/getFood", async (req, res) => {
 
 router.post("/getFoodByBarcode", async (req, res) => {
   try {
-    const { currentDate, barcode, amount, mealType, userId } = req.body;
+    const {
+      currentDate,
+      barcode,
+      amount,
+      mealType,
+      userId,
+      idToCheckFoodExists,
+    } = req.body;
 
-    // 1) make api call to retrieve food data from barcode
     const apiData = await axios.get(
       `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
     );
     const product = apiData.data.product;
     const name = product.product_name || product.brands;
 
-    // 2) create meal object from barcode for food, userId, category from mealType a currentDate
-    // first check if meal for this day already exists based on currentDate, userId and mealType
     const meal = await Meal.findOne({
       userId: userId,
       date: currentDate,
       category: mealType,
     });
-    let mealId;
 
-    // if meal does not exist, create meal object
+    let mealId;
 
     if (!meal) {
       const newMeal = await Meal.create({
@@ -79,7 +83,6 @@ router.post("/getFoodByBarcode", async (req, res) => {
 
       mealId = newMeal._id;
     } else {
-      // if meal exists, update meal object and add barcode to food array
       const updatedMeal = await Meal.findOneAndUpdate(
         { userId: userId, date: currentDate, category: mealType },
         { $push: { food: barcode } },
@@ -89,51 +92,59 @@ router.post("/getFoodByBarcode", async (req, res) => {
       mealId = updatedMeal._id;
     }
 
-    // 1.1) create food object from api data
-    const productData = {
-      foodName: name,
-      barcode: product._id,
-      calories: (product.nutriments["energy-kcal_100g"] / 100) * amount || 0,
-      protein: (product.nutriments.proteins_100g / 100) * amount || 0,
-      fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
-      carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
-      fat: (product.nutriments.fat_100g / 100) * amount || 0,
-      amount: amount,
-      date: currentDate,
-      mealId: mealId,
-    };
+    const existingFood = await Food.findOne({
+      idToCheckFoodExists: idToCheckFoodExists,
+    });
 
-    // 1.2) save food object to database with food model
+    if (existingFood) {
+      // if food item exists, update it
+      const updatedFood = await Food.findOneAndUpdate(
+        { idToCheckFoodExists: idToCheckFoodExists },
+        {
+          $set: {
+            calories:
+              (product.nutriments["energy-kcal_100g"] / 100) * amount || 0,
+            protein: (product.nutriments.proteins_100g / 100) * amount || 0,
+            fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
+            carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
+            fat: (product.nutriments.fat_100g / 100) * amount || 0,
+            amount: amount,
+            date: currentDate,
+            mealId: mealId,
+          },
+        },
+        { new: true }
+      );
 
-    // check if food object based on barcode, date, and mealId already exists in database
-    // const food = await Food.findOne({ mealId: mealId, barcode: barcode });
+      console.log("Updated food item:", updatedFood);
 
-    // // if food object does not exist, create food object
-    // if (!food) {
-    const newFood = await Food.create(productData);
-    // } else {
-    //   // update food object in database
-    //   const updatedFood = await Food.findOneAndUpdate(
-    //     { barcode: barcode, date: currentDate },
-    //     {
-    //       $inc: {
-    //         calories: productData.calories,
-    //         protein: productData.protein,
-    //         fiber: productData.fiber,
-    //         carbs: productData.carbs,
-    //       },
-    //     },
-    //     { new: true }
-    //   );
-    // }
+      res
+        .status(200)
+        .json({ message: "Product data retrieved", data: updatedFood });
+    } else {
+      // if food item does not exist, create new food item
+      const productData = {
+        idToCheckFoodExists: idToCheckFoodExists,
+        foodName: name,
+        barcode: barcode,
+        calories: (product.nutriments["energy-kcal_100g"] / 100) * amount || 0,
+        protein: (product.nutriments.proteins_100g / 100) * amount || 0,
+        fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
+        carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
+        fat: (product.nutriments.fat_100g / 100) * amount || 0,
+        amount: amount,
+        date: currentDate,
+        mealId: mealId,
+      };
 
-    // return api data to frontend
+      const newFood = await Food.create(productData);
 
-    console.log("Sending data to frontend");
+      console.log("Created new food item:", newFood);
 
-    res
-      .status(200)
-      .json({ message: "Product data retrieved", data: productData });
+      res
+        .status(200)
+        .json({ message: "Product data retrieved", data: newFood });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error });
