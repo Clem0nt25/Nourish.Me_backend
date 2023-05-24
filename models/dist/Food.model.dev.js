@@ -7,9 +7,6 @@ var _require = require("mongoose"),
     model = _require.model;
 
 var foodSchema = new Schema({
-  idToCheckFoodExists: {
-    type: String
-  },
   foodName: {
     type: String,
     required: true

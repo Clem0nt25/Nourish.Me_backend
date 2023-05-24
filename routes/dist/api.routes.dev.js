@@ -19,9 +19,7 @@ var mongoose = require("mongoose");
 
 var User = require("../models/User.model");
 
-var UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
-
-var uuid = require("uuid"); // search route
+var UserSpecsCurrent = require("../models/UserSpecsCurrent.model"); // search route
 
 
 router.post("/getFood", function _callee(req, res) {
@@ -80,14 +78,14 @@ router.post("/getFood", function _callee(req, res) {
 }); // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
 
 router.post("/getFoodByBarcode", function _callee2(req, res) {
-  var _req$body, currentDate, barcode, amount, mealType, userId, idToCheckFoodExists, apiData, product, name, meal, mealId, newMeal, updatedMeal, existingFood, updatedFood, productData, newFood;
+  var _req$body, currentDate, barcode, amount, mealType, userId, _id, apiData, product, name, meal, mealId, newMeal, updatedMeal, productData, newFood;
 
   return regeneratorRuntime.async(function _callee2$(_context2) {
     while (1) {
       switch (_context2.prev = _context2.next) {
         case 0:
           _context2.prev = 0;
-          _req$body = req.body, currentDate = _req$body.currentDate, barcode = _req$body.barcode, amount = _req$body.amount, mealType = _req$body.mealType, userId = _req$body.userId, idToCheckFoodExists = _req$body.idToCheckFoodExists;
+          _req$body = req.body, currentDate = _req$body.currentDate, barcode = _req$body.barcode, amount = _req$body.amount, mealType = _req$body.mealType, userId = _req$body.userId, _id = _req$body._id;
           _context2.next = 4;
           return regeneratorRuntime.awrap(axios.get("https://world.openfoodfacts.org/api/v0/product/".concat(barcode, ".json")));
 
@@ -143,51 +141,7 @@ router.post("/getFoodByBarcode", function _callee2(req, res) {
           mealId = updatedMeal._id;
 
         case 21:
-          _context2.next = 23;
-          return regeneratorRuntime.awrap(Food.findOne({
-            idToCheckFoodExists: idToCheckFoodExists
-          }));
-
-        case 23:
-          existingFood = _context2.sent;
-
-          if (!existingFood) {
-            _context2.next = 32;
-            break;
-          }
-
-          _context2.next = 27;
-          return regeneratorRuntime.awrap(Food.findOneAndUpdate({
-            idToCheckFoodExists: idToCheckFoodExists
-          }, {
-            $set: {
-              calories: product.nutriments["energy-kcal_100g"] / 100 * amount || 0,
-              protein: product.nutriments.proteins_100g / 100 * amount || 0,
-              fiber: product.nutriments.fiber_100g / 100 * amount || 0,
-              carbs: product.nutriments.carbohydrates_100g / 100 * amount || 0,
-              fat: product.nutriments.fat_100g / 100 * amount || 0,
-              amount: amount,
-              date: currentDate,
-              mealId: mealId
-            }
-          }, {
-            "new": true
-          }));
-
-        case 27:
-          updatedFood = _context2.sent;
-          console.log("Updated food item:", updatedFood);
-          res.status(200).json({
-            message: "Product data retrieved",
-            data: updatedFood
-          });
-          _context2.next = 38;
-          break;
-
-        case 32:
-          // if food item does not exist, create new food item
           productData = {
-            idToCheckFoodExists: idToCheckFoodExists,
             foodName: name,
             barcode: barcode,
             calories: product.nutriments["energy-kcal_100g"] / 100 * amount || 0,
@@ -199,23 +153,42 @@ router.post("/getFoodByBarcode", function _callee2(req, res) {
             date: currentDate,
             mealId: mealId
           };
-          _context2.next = 35;
-          return regeneratorRuntime.awrap(Food.create(productData));
 
-        case 35:
+          if (!_id) {
+            _context2.next = 29;
+            break;
+          }
+
+          _context2.next = 25;
+          return regeneratorRuntime.awrap(Food.findByIdAndUpdate(_id, productData, {
+            "new": true
+          }));
+
+        case 25:
           newFood = _context2.sent;
-          console.log("Created new food item:", newFood);
-          res.status(200).json({
-            message: "Product data retrieved",
-            data: newFood
-          });
-
-        case 38:
-          _context2.next = 44;
+          console.log("Updated food item:", newFood);
+          _context2.next = 33;
           break;
 
-        case 40:
-          _context2.prev = 40;
+        case 29:
+          _context2.next = 31;
+          return regeneratorRuntime.awrap(Food.create(productData));
+
+        case 31:
+          newFood = _context2.sent;
+          console.log("Created new food item:", newFood);
+
+        case 33:
+          res.status(200).json({
+            message: "Product data retrieved",
+            data: newFood,
+            objectId: newFood._id
+          });
+          _context2.next = 40;
+          break;
+
+        case 36:
+          _context2.prev = 36;
           _context2.t0 = _context2["catch"](0);
           console.error(_context2.t0);
           res.status(500).json({
@@ -223,12 +196,12 @@ router.post("/getFoodByBarcode", function _callee2(req, res) {
             error: _context2.t0
           });
 
-        case 44:
+        case 40:
         case "end":
           return _context2.stop();
       }
     }
-  }, null, null, [[0, 40]]);
+  }, null, null, [[0, 36]]);
 }); // Get meals and specific food data for each meal
 
 router.get("/getUserDiary", function _callee4(req, res) {

@@ -5,7 +5,6 @@
 const { Schema, model } = require("mongoose");
 
 const foodSchema = new Schema({
-  idToCheckFoodExists: { type: String },
   foodName: {
     type: String,
     required: true,
