@@ -9,42 +9,46 @@ const User = require("../models/User.model");
 const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
 const moment = require("moment");
 
-// search route
 router.post("/getFood", async (req, res) => {
 	console.log(req.body);
-
+  
 	try {
-		const { foodName } = req.body;
-
-		// make api call
-		const apiData = await axios.get(
-			`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${foodName}&search_simple=1&action=process&json=1&page_size=1`
-		);
-		const allProdcuts = apiData.data.products;
-
-		// for loop over the first 10 products and save it to an object
-		const foodData = [];
-		for (let i = 0; i < 10; i++) {
-			const name = allProdcuts[i].product_name || allProdcuts[i].brands;
-
-			const food = {
-				foodName: name,
-				image: allProdcuts[i].image_front_small_url,
-				barcode: allProdcuts[i]._id,
-			};
-
-			foodData.push(food);
-		}
-
-		console.log(foodData);
-
-		// return api data to frontend
-		res.status(200).json({ message: "Food data retrieved", data: foodData });
+	  const { foodName } = req.body;
+  
+	  // make api call
+	  const apiData = await axios.get(
+		`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${foodName}&search_simple=1&action=process&json=1&page_size=1`
+	  );
+	  const allProducts = apiData.data.products;
+  
+	  // for loop over the first 10 products and save it to an object
+	  const foodData = [];
+	  for (let i = 0; i < 10; i++) {
+		const name = allProducts[i].product_name || allProducts[i].brands;
+  
+		const food = {
+		  foodName: name,
+		  image: allProducts[i].image_front_small_url,
+		  barcode: allProducts[i]._id,
+		  calories: allProducts[i].nutriments["energy-kcal_100g"],
+		  protein: allProducts[i].nutriments.proteins_100g,
+		  fiber: allProducts[i].nutriments.fiber_100g,
+		  carbs: allProducts[i].nutriments.carbohydrates_100g,
+		  fat: allProducts[i].nutriments.fat_100g,
+		};
+  
+		foodData.push(food);
+	  }
+  
+	  console.log(foodData);
+  
+	  // return api data to frontend
+	  res.status(200).json({ message: "Food data retrieved", data: foodData });
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ message: "Internal server error", error });
+	  console.error(error);
+	  res.status(500).json({ message: "Internal server error", error });
 	}
-});
+  });
 
 // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
 router.post("/getFoodByBarcode", async (req, res) => {
