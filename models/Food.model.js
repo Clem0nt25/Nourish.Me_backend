@@ -43,7 +43,11 @@ const foodSchema = new Schema({
     required: true,
   },
   amount: Number,
+  image: String,
 });
+
+const Food = model("Food", foodSchema);
+exports.Food = Food;
 
 const Food = model("Food", foodSchema);
 exports.Food = Food;

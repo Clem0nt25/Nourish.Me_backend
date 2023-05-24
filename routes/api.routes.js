@@ -49,189 +49,184 @@ router.post("/getFood", async (req, res) => {
 
 router.post("/getFoodByBarcode", async (req, res) => {
 	try {
-		const { currentDate, barcode, amount, mealType, userId } = req.body;
-
-		// 1) make api call to retrieve food data from barcode
-		const apiData = await axios.get(
-			`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
-		);
-		const product = apiData.data.product;
-		const name = product.product_name || product.brands;
-
-		// 2) create meal object from barcode for food, userId, category from mealType a currentDate
-		// first check if meal for this day already exists based on currentDate, userId and mealType
-		const meal = await Meal.findOne({
-			userId: userId,
-			date: currentDate,
-			category: mealType,
+	  const { currentDate, barcode, amount, mealType, userId } = req.body;
+  
+	  // 1) make api call to retrieve food data from barcode
+	  const apiData = await axios.get(
+		`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
+	  );
+	  const product = apiData.data.product;
+	  const name = product.product_name || product.brands;
+  
+	  // 2) create meal object from barcode for food, userId, category from mealType a currentDate
+	  // first check if meal for this day already exists based on currentDate, userId and mealType
+	  const meal = await Meal.findOne({
+		userId: userId,
+		date: currentDate,
+		category: mealType,
+	  });
+	  let mealId;
+  
+	  // if meal does not exist, create meal object
+  
+	  if (!meal) {
+		const newMeal = await Meal.create({
+		  food: [barcode],
+		  userId: userId,
+		  category: mealType,
+		  date: currentDate,
 		});
-		let mealId;
-
-		// if meal does not exist, create meal object
-
-		if (!meal) {
-			const newMeal = await Meal.create({
-				food: [barcode],
-				userId: userId,
-				category: mealType,
-				date: currentDate,
-			});
-
-			mealId = newMeal._id;
-		} else {
-			// if meal exists, update meal object and add barcode to food array
-			const updatedMeal = await Meal.findOneAndUpdate(
-				{ userId: userId, date: currentDate, category: mealType },
-				{ $push: { food: barcode } },
-				{ new: true }
-			);
-
-			mealId = updatedMeal._id;
-		}
-
-		// 1.1) create food object from api data
-		const productData = {
-			foodName: name,
-			barcode: product._id,
-			calories: (product.nutriments["energy-kcal_100g"] / 100) * amount || 0,
-			protein: (product.nutriments.proteins_100g / 100) * amount || 0,
-			fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
-			carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
-			fat: (product.nutriments.fat_100g / 100) * amount || 0,
-			amount: amount,
-			date: currentDate,
-			mealId: mealId,
-		};
-
-		// 1.2) save food object to database with food model
-
-		// check if food object based on barcode, date, and mealId already exists in database
-		const food = await Food.findOne({ mealId: mealId, barcode: barcode });
-
-		// // if food object does not exist, create food object
-		if (!food) {
+  
+		mealId = newMeal._id;
+	  } else {
+		// if meal exists, update meal object and add barcode to food array
+		const updatedMeal = await Meal.findOneAndUpdate(
+		  { userId: userId, date: currentDate, category: mealType },
+		  { $push: { food: barcode } },
+		  { new: true }
+		);
+  
+		mealId = updatedMeal._id;
+	  }
+  
+	  // 1.1) create food object from api data
+	  const productData = {
+		foodName: name,
+		barcode: product._id,
+		calories: (product.nutriments["energy-kcal_100g"] / 100) * amount || 0,
+		protein: (product.nutriments.proteins_100g / 100) * amount || 0,
+		fiber: (product.nutriments.fiber_100g / 100) * amount || 0,
+		carbs: (product.nutriments.carbohydrates_100g / 100) * amount || 0,
+		fat: (product.nutriments.fat_100g / 100) * amount || 0,
+		amount: amount,
+		date: currentDate,
+		mealId: mealId,
+		image: product.image_front_small_url,
+	  };
+  
+	  // 1.2) save food object to database with food model
+  
+	  // check if food object based on barcode, date, and mealId already exists in database
+	  const food = await Food.findOne({ mealId: mealId, barcode: barcode });
+  
+	  // // if food object does not exist, create food object
+	  if (!food) {
 		const newFood = await Food.create(productData);
-		} else {
-		  // update food object in database
-		  const updatedFood = await Food.findOneAndUpdate(
-		    { barcode: barcode, date: currentDate },
-		    {
-		      $inc: {
-		        calories: productData.calories,
-		        protein: productData.protein,
-		        fiber: productData.fiber,
-		        carbs: productData.carbs,
-                fat: productData.fat,
-		      },
-		    },
-		    { new: true }
-		  );
-		}
-
-        // get all mealIds for the current day and userId
-        const allMeals = await Meal.find({ date: currentDate, userId: userId });
-        const allMealIds = allMeals.map((meal) => meal._id);
-        console.log(allMealIds);
-
-        // add up all calories, protein, fiber, carbs, fat from all food objects
-        let totalCalories = 0;
-        let totalProtein = 0;
-        let totalFiber = 0;
-        let totalCarbs = 0;
-        let totalFat = 0;
-
-        // get all food objects for all mealIds
-        const allFood = await Food.find({ mealId: { $in: allMealIds } });
-        console.log(allFood);
-
-        allFood.forEach((food) => {
-            totalCalories += food.calories;
-            totalProtein += food.protein;
-            totalFiber += food.fiber;
-            totalCarbs += food.carbs;
-            totalFat += food.fat;
-        });
-
-
-        // 3) get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent by userId
-
-        const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId });
-        // get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent variable
-        const activityLevel = userSpecsCurrent.activityLevel;
-        const currentWeight = userSpecsCurrent.currentWeight;
-        const goalCalories = userSpecsCurrent.goalCalories;
-        const goalProtein = userSpecsCurrent.goalProtein;
-        const goalCarbs = userSpecsCurrent.goalCarbs;
-        const goalFat = userSpecsCurrent.goalFat;
-        const goalFiber = userSpecsCurrent.goalFiber;
-
-        // 4) check if user has a UserSpecshistory object for the current date
-        const userSpecsHistory = await UserSpecsHistory.findOne({ userId: userId, date: currentDate });
-
-        // if userSpecsHistory object does not exist, create userSpecsHistory object
-        if (!userSpecsHistory) {
-            const newUserSpecsHistory = await UserSpecsHistory.create({
-                activityLevel: activityLevel,
-                currentWeight: currentWeight,
-                currentCalories: totalCalories,
-                goalCalories: goalCalories,
-                currentProtein: totalProtein,
-                goalProtein: goalProtein,
-                currentCarbs: totalCarbs,
-                goalCarbs: goalCarbs,
-                currentFat: totalFat,
-                goalFat: goalFat,
-                currentFiber: totalFiber,
-                goalFiber: goalFiber,
-                date: currentDate,
-                userId: userId,
-            })} else {
-                // if userSpecsHistory object exists, update userSpecsHistory object
-                const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
-                    { userId: userId, date: currentDate },
-                    {
-                        activityLevel: activityLevel,
-                        currentWeight: currentWeight,
-                        currentCalories: totalCalories,
-                        goalCalories: goalCalories,
-                        currentProtein: totalProtein,
-                        goalProtein: goalProtein,
-                        currentCarbs: totalCarbs,
-                        goalCarbs: goalCarbs,
-                        currentFat: totalFat,
-                        goalFat: goalFat,
-                        currentFiber: totalFiber,
-                        goalFiber: goalFiber,
-                        date: currentDate,
-                        userId: userId,
-                    },
-                    { new: true }
-                );
-            }
-
-            console.log("History updated");
-
-
-
-
-
-
-
-
-
-
-
-		// return api data to frontend
-
-		console.log("Sending data to frontend");
-		res
-			.status(200)
-			.json({ message: "Product data retrieved", data: productData });
+	  } else {
+		// update food object in database
+		const updatedFood = await Food.findOneAndUpdate(
+		  { barcode: barcode, date: currentDate, mealId: mealId },
+		  {
+			$set: {
+			  calories: productData.calories,
+			  protein: productData.protein,
+			  fiber: productData.fiber,
+			  carbs: productData.carbs,
+			  fat: productData.fat,
+			  amount: productData.amount,
+			},
+		  },
+		  { new: true }
+		);
+	  }
+  
+	  // get all mealIds for the current day and userId
+	  const allMeals = await Meal.find({ date: currentDate, userId: userId });
+	  const allMealIds = allMeals.map((meal) => meal._id);
+	  console.log(allMealIds);
+  
+	  // add up all calories, protein, fiber, carbs, fat from all food objects
+	  let totalCalories = 0;
+	  let totalProtein = 0;
+	  let totalFiber = 0;
+	  let totalCarbs = 0;
+	  let totalFat = 0;
+  
+	  // get all food objects for all mealIds
+	  const allFood = await Food.find({ mealId: { $in: allMealIds } });
+	  console.log(allFood);
+  
+	  allFood.forEach((food) => {
+		totalCalories += food.calories;
+		totalProtein += food.protein;
+		totalFiber += food.fiber;
+		totalCarbs += food.carbs;
+		totalFat += food.fat;
+	  });
+  
+	  // 3) get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent by userId
+  
+	  const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId });
+	  // get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent variable
+	  const activityLevel = userSpecsCurrent.activityLevel;
+	  const currentWeight = userSpecsCurrent.currentWeight;
+	  const goalCalories = userSpecsCurrent.goalCalories;
+	  const goalProtein = userSpecsCurrent.goalProtein;
+	  const goalCarbs = userSpecsCurrent.goalCarbs;
+	  const goalFat = userSpecsCurrent.goalFat;
+	  const goalFiber = userSpecsCurrent.goalFiber;
+  
+	  // 4) check if user has a UserSpecshistory object for the current date
+	  const userSpecsHistory = await UserSpecsHistory.findOne({
+		userId: userId,
+		date: currentDate,
+	  });
+  
+	  // if userSpecsHistory object does not exist, create userSpecsHistory object
+	  if (!userSpecsHistory) {
+		const newUserSpecsHistory = await UserSpecsHistory.create({
+		  activityLevel: activityLevel,
+		  currentWeight: currentWeight,
+		  currentCalories: totalCalories,
+		  goalCalories: goalCalories,
+		  currentProtein: totalProtein,
+		  goalProtein: goalProtein,
+		  currentCarbs: totalCarbs,
+		  goalCarbs: goalCarbs,
+		  currentFat: totalFat,
+		  goalFat: goalFat,
+		  currentFiber: totalFiber,
+		  goalFiber: goalFiber,
+		  date: currentDate,
+		  userId: userId,
+		});
+	  } else {
+		// if userSpecsHistory object exists, update userSpecsHistory object
+		const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+		  { userId: userId, date: currentDate },
+		  {
+			activityLevel: activityLevel,
+			currentWeight: currentWeight,
+			currentCalories: totalCalories,
+			goalCalories: goalCalories,
+			currentProtein: totalProtein,
+			goalProtein: goalProtein,
+			currentCarbs: totalCarbs,
+			goalCarbs: goalCarbs,
+			currentFat: totalFat,
+			goalFat: goalFat,
+			currentFiber: totalFiber,
+			goalFiber: goalFiber,
+			date: currentDate,
+			userId: userId,
+		  },
+		  { new: true }
+		);
+	  }
+  
+	  console.log("History updated");
+  
+	  // return api data to frontend
+  
+	  console.log("Sending data to frontend");
+	  res
+		.status(200)
+		.json({ message: "Product data retrieved", data: productData });
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ message: "Internal server error", error });
+	  console.error(error);
+	  res.status(500).json({ message: "Internal server error", error });
 	}
-});
+  });
 
 // Get meals and specific food data for each meal
 router.get("/getUserDiary", async (req, res) => {
