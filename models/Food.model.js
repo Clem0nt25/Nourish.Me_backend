@@ -46,9 +46,5 @@ const foodSchema = new Schema({
 	image: String,
 });
 
-<<<<<<< HEAD
-=======
-
->>>>>>> c3914c1bca27c9847fbac632f9ca7dc3067b4387
 const Food = model("Food", foodSchema);
 exports.Food = Food;
