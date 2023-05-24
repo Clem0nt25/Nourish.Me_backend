@@ -46,7 +46,6 @@ router.post("/getFood", async (req, res) => {
 });
 
 // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
-
 router.post("/getFoodByBarcode", async (req, res) => {
 	try {
 	  const { currentDate, barcode, amount, mealType, userId } = req.body;
@@ -226,7 +225,90 @@ router.post("/getFoodByBarcode", async (req, res) => {
 	  console.error(error);
 	  res.status(500).json({ message: "Internal server error", error });
 	}
-  });
+});
+
+
+// make route that deletes food object from database based on currentDate, userId, Barcode, MealId
+router.post("/deleteFood", async (req, res) => {
+	try {
+	  const { userId, barcode, mealId, currentDate } = req.body;
+	  console.log(userId, barcode, mealId, currentDate);
+
+	  // delete food object from database
+	  const deletedFood = await Food.findOneAndDelete({
+		barcode: barcode,
+		mealId: mealId,
+		date: currentDate,
+	  });
+
+	  // get all mealIds for the current day and userId
+	  const allMeals = await Meal.find({ date: currentDate, userId: userId });
+	  const allMealIds = allMeals.map((meal) => meal._id);
+	  console.log(allMealIds);
+
+	  // add up all calories, protein, fiber, carbs, fat from all food objects
+	  let totalCalories = 0;
+	  let totalProtein = 0;
+	  let totalFiber = 0;
+	  let totalCarbs = 0;
+	  let totalFat = 0;
+
+	  // get all food objects for all mealIds
+	  const allFood = await Food.find({ mealId: { $in: allMealIds } });
+	  console.log(allFood);
+
+	  allFood.forEach((food) => {
+		totalCalories += food.calories;
+		totalProtein += food.protein;
+		totalFiber += food.fiber;
+		totalCarbs += food.carbs;
+		totalFat += food.fat;
+	  });
+
+	  // 3) get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent by userId
+	  const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId });
+	  // get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent variable
+	  const activityLevel = userSpecsCurrent.activityLevel;
+	  const currentWeight = userSpecsCurrent.currentWeight;
+	  const goalCalories = userSpecsCurrent.goalCalories;
+	  const goalProtein = userSpecsCurrent.goalProtein;
+	  const goalCarbs = userSpecsCurrent.goalCarbs;
+	  const goalFat = userSpecsCurrent.goalFat;
+	  const goalFiber = userSpecsCurrent.goalFiber;
+
+	  // 4) Update userSpecsHistory object
+	  const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+		{ userId: userId, date: currentDate },
+		{
+			activityLevel: activityLevel,
+			currentWeight: currentWeight,
+			currentCalories: totalCalories,
+			goalCalories: goalCalories,
+			currentProtein: totalProtein,
+			goalProtein: goalProtein,
+			currentCarbs: totalCarbs,
+			goalCarbs: goalCarbs,
+			currentFat: totalFat,
+			goalFat: goalFat,
+			currentFiber: totalFiber,
+			goalFiber: goalFiber,
+			date: currentDate,
+			userId: userId,
+		},
+		{ new: true }
+		);
+
+		res.status(200).json({ message: "Food deleted", data: deletedFood });
+
+	
+	} catch (error) {
+	console.error(error);
+	res.status(500).json({ message: "Internal server error", error });
+	}
+});
+
+
+
 
 // Get meals and specific food data for each meal
 router.get("/getUserDiary", async (req, res) => {
@@ -259,7 +341,6 @@ router.get("/getUserDiary", async (req, res) => {
 });
 
 // simple route to create a UserSpecs document in the database
-
 router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 	try {
 		await UserSpecsCurrent.create(req.body);
@@ -271,7 +352,6 @@ router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 });
 
 //route that get the UserSpecsCurrent document in the database
-
 router.get("/checkUserSpecs/:id", async (req, res) => {
 	console.log("hello");
 	try {
