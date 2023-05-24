@@ -7,6 +7,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const User = require("../models/User.model");
 const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
+const moment = require("moment");
 
 // search route
 router.post("/getFood", async (req, res) => {
@@ -224,6 +225,31 @@ router.post("/getFoodByBarcode", async (req, res) => {
 	} catch (error) {
 	  console.error(error);
 	  res.status(500).json({ message: "Internal server error", error });
+	}
+});
+
+// make get route that get UserSpecsHistory object for current date and userId (userId from params)
+router.get("/userSpecsHistory/:userId", async (req, res) => {
+	try {
+		const { userId } = req.params;
+		const currentDate = moment().format("YYYY-MM-DD");
+		console.log(userId, currentDate);
+
+		// get userSpecsHistory object for current date and userId
+		const userSpecsHistory = await UserSpecsHistory.findOne({
+			userId: userId,
+			date: currentDate,
+		});
+
+		console.log(userSpecsHistory);
+
+		res.status(200).json({
+			message: "UserSpecsHistory object retrieved",
+			data: userSpecsHistory,
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Internal server error", error });
 	}
 });
 
