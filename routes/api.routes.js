@@ -7,46 +7,50 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const User = require("../models/User.model");
 const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
+const moment = require("moment");
 
-// search route
 router.post("/getFood", async (req, res) => {
 	console.log(req.body);
-
+  
 	try {
-		const { foodName } = req.body;
-
-		// make api call
-		const apiData = await axios.get(
-			`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${foodName}&search_simple=1&action=process&json=1&page_size=1`
-		);
-		const allProdcuts = apiData.data.products;
-
-		// for loop over the first 10 products and save it to an object
-		const foodData = [];
-		for (let i = 0; i < 10; i++) {
-			const name = allProdcuts[i].product_name || allProdcuts[i].brands;
-
-			const food = {
-				foodName: name,
-				image: allProdcuts[i].image_front_small_url,
-				barcode: allProdcuts[i]._id,
-			};
-
-			foodData.push(food);
-		}
-
-		console.log(foodData);
-
-		// return api data to frontend
-		res.status(200).json({ message: "Food data retrieved", data: foodData });
+	  const { foodName } = req.body;
+  
+	  // make api call
+	  const apiData = await axios.get(
+		`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${foodName}&search_simple=1&action=process&json=1&page_size=1`
+	  );
+	  const allProducts = apiData.data.products;
+  
+	  // for loop over the first 10 products and save it to an object
+	  const foodData = [];
+	  for (let i = 0; i < 10; i++) {
+		const name = allProducts[i].product_name || allProducts[i].brands;
+  
+		const food = {
+		  foodName: name,
+		  image: allProducts[i].image_front_small_url,
+		  barcode: allProducts[i]._id,
+		  calories: allProducts[i].nutriments["energy-kcal_100g"],
+		  protein: allProducts[i].nutriments.proteins_100g,
+		  fiber: allProducts[i].nutriments.fiber_100g,
+		  carbs: allProducts[i].nutriments.carbohydrates_100g,
+		  fat: allProducts[i].nutriments.fat_100g,
+		};
+  
+		foodData.push(food);
+	  }
+  
+	  console.log(foodData);
+  
+	  // return api data to frontend
+	  res.status(200).json({ message: "Food data retrieved", data: foodData });
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ message: "Internal server error", error });
+	  console.error(error);
+	  res.status(500).json({ message: "Internal server error", error });
 	}
-});
+  });
 
 // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
-
 router.post("/getFoodByBarcode", async (req, res) => {
 	try {
 	  const { currentDate, barcode, amount, mealType, userId } = req.body;
@@ -226,7 +230,115 @@ router.post("/getFoodByBarcode", async (req, res) => {
 	  console.error(error);
 	  res.status(500).json({ message: "Internal server error", error });
 	}
-  });
+});
+
+// make get route that get UserSpecsHistory object for current date and userId (userId from params)
+router.get("/userSpecsHistory/:userId", async (req, res) => {
+	try {
+		const { userId } = req.params;
+		const currentDate = moment().format("YYYY-MM-DD");
+		console.log(userId, currentDate);
+
+		// get userSpecsHistory object for current date and userId
+		const userSpecsHistory = await UserSpecsHistory.findOne({
+			userId: userId,
+			date: currentDate,
+		});
+
+		console.log(userSpecsHistory);
+
+		res.status(200).json({
+			message: "UserSpecsHistory object retrieved",
+			data: userSpecsHistory,
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Internal server error", error });
+	}
+});
+
+
+// make route that deletes food object from database based on currentDate, userId, Barcode, MealId
+router.post("/deleteFood", async (req, res) => {
+	try {
+	  const { userId, barcode, mealId, currentDate } = req.body;
+	  console.log(userId, barcode, mealId, currentDate);
+
+	  // delete food object from database
+	  const deletedFood = await Food.findOneAndDelete({
+		barcode: barcode,
+		mealId: mealId,
+		date: currentDate,
+	  });
+
+	  // get all mealIds for the current day and userId
+	  const allMeals = await Meal.find({ date: currentDate, userId: userId });
+	  const allMealIds = allMeals.map((meal) => meal._id);
+	  console.log(allMealIds);
+
+	  // add up all calories, protein, fiber, carbs, fat from all food objects
+	  let totalCalories = 0;
+	  let totalProtein = 0;
+	  let totalFiber = 0;
+	  let totalCarbs = 0;
+	  let totalFat = 0;
+
+	  // get all food objects for all mealIds
+	  const allFood = await Food.find({ mealId: { $in: allMealIds } });
+	  console.log(allFood);
+
+	  allFood.forEach((food) => {
+		totalCalories += food.calories;
+		totalProtein += food.protein;
+		totalFiber += food.fiber;
+		totalCarbs += food.carbs;
+		totalFat += food.fat;
+	  });
+
+	  // 3) get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent by userId
+	  const userSpecsCurrent = await UserSpecsCurrent.findOne({ userId: userId });
+	  // get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent variable
+	  const activityLevel = userSpecsCurrent.activityLevel;
+	  const currentWeight = userSpecsCurrent.currentWeight;
+	  const goalCalories = userSpecsCurrent.goalCalories;
+	  const goalProtein = userSpecsCurrent.goalProtein;
+	  const goalCarbs = userSpecsCurrent.goalCarbs;
+	  const goalFat = userSpecsCurrent.goalFat;
+	  const goalFiber = userSpecsCurrent.goalFiber;
+
+	  // 4) Update userSpecsHistory object
+	  const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+		{ userId: userId, date: currentDate },
+		{
+			activityLevel: activityLevel,
+			currentWeight: currentWeight,
+			currentCalories: totalCalories,
+			goalCalories: goalCalories,
+			currentProtein: totalProtein,
+			goalProtein: goalProtein,
+			currentCarbs: totalCarbs,
+			goalCarbs: goalCarbs,
+			currentFat: totalFat,
+			goalFat: goalFat,
+			currentFiber: totalFiber,
+			goalFiber: goalFiber,
+			date: currentDate,
+			userId: userId,
+		},
+		{ new: true }
+		);
+
+		res.status(200).json({ message: "Food deleted", data: deletedFood });
+
+	
+	} catch (error) {
+	console.error(error);
+	res.status(500).json({ message: "Internal server error", error });
+	}
+});
+
+
+
 
 // Get meals and specific food data for each meal
 router.get("/getUserDiary", async (req, res) => {
@@ -259,7 +371,6 @@ router.get("/getUserDiary", async (req, res) => {
 });
 
 // simple route to create a UserSpecs document in the database
-
 router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 	try {
 		await UserSpecsCurrent.create(req.body);
@@ -271,7 +382,6 @@ router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 });
 
 //route that get the UserSpecsCurrent document in the database
-
 router.get("/checkUserSpecs/:id", async (req, res) => {
 	console.log("hello");
 	try {
