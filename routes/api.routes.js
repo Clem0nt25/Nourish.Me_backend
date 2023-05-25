@@ -176,47 +176,55 @@ router.post("/getFoodByBarcode", isAuthenticated, async (req, res) => {
 		date: currentDate,
 	  });
   
-	  // if userSpecsHistory object does not exist, create userSpecsHistory object
-	  if (!userSpecsHistory) {
-		const newUserSpecsHistory = await UserSpecsHistory.create({
-		  activityLevel: activityLevel,
-		  currentWeight: currentWeight,
-		  currentCalories: totalCalories,
-		  goalCalories: goalCalories,
-		  currentProtein: totalProtein,
-		  goalProtein: goalProtein,
-		  currentCarbs: totalCarbs,
-		  goalCarbs: goalCarbs,
-		  currentFat: totalFat,
-		  goalFat: goalFat,
-		  currentFiber: totalFiber,
-		  goalFiber: goalFiber,
-		  date: currentDate,
-		  userId: userId,
-		});
-	  } else {
-		// if userSpecsHistory object exists, update userSpecsHistory object
-		const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
-		  { userId: userId, date: currentDate },
-		  {
+
+		// if userSpecsHistory object does not exist, create userSpecsHistory object
+		if (!userSpecsHistory) {
+			const newUserSpecsHistory = await UserSpecsHistory.create({
 			activityLevel: activityLevel,
-			currentWeight: currentWeight,
-			currentCalories: totalCalories,
+			currentWeight: parseFloat(currentWeight.toFixed(1)),
+			currentCalories: parseFloat(totalCalories.toFixed(1)),
 			goalCalories: goalCalories,
-			currentProtein: totalProtein,
+			currentProtein: parseFloat(totalProtein.toFixed(1)),
 			goalProtein: goalProtein,
-			currentCarbs: totalCarbs,
+			currentCarbs: parseFloat(totalCarbs.toFixed(1)),
 			goalCarbs: goalCarbs,
-			currentFat: totalFat,
+			currentFat: parseFloat(totalFat.toFixed(1)),
 			goalFat: goalFat,
-			currentFiber: totalFiber,
+			currentFiber: parseFloat(totalFiber.toFixed(1)),
 			goalFiber: goalFiber,
 			date: currentDate,
 			userId: userId,
-		  },
-		  { new: true }
-		);
-	  }
+			});
+		} else {
+			// if userSpecsHistory object exists, update userSpecsHistory object
+			const updatedUserSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+			{ userId: userId, date: currentDate },
+			{
+				activityLevel: activityLevel,
+				currentWeight: parseFloat(currentWeight.toFixed(1)),
+				currentCalories: parseFloat(totalCalories.toFixed(1)),
+				goalCalories: goalCalories,
+				currentProtein: parseFloat(totalProtein.toFixed(1)),
+				goalProtein: goalProtein,
+				currentCarbs: parseFloat(totalCarbs.toFixed(1)),
+				goalCarbs: goalCarbs,
+				currentFat: parseFloat(totalFat.toFixed(1)),
+				goalFat: goalFat,
+				currentFiber: parseFloat(totalFiber.toFixed(1)),
+				goalFiber: goalFiber,
+				date: currentDate,
+				userId: userId,
+			},
+			{ new: true }
+			);
+		}
+
+
+
+
+
+
+
   
 	  console.log("History updated");
   
