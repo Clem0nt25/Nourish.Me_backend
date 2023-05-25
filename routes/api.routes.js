@@ -9,7 +9,7 @@ const User = require("../models/User.model");
 const UserSpecsCurrent = require("../models/UserSpecsCurrent.model");
 const moment = require("moment");
 
-router.post("/getFood", async (req, res) => {
+router.post("/getFood", isAuthenticated, async (req, res) => {
 	console.log(req.body);
   
 	try {
@@ -51,7 +51,7 @@ router.post("/getFood", async (req, res) => {
   });
 
 // make second route to call api by barcode received from frontend { barcode: 123456789, amount: 100 }
-router.post("/getFoodByBarcode", async (req, res) => {
+router.post("/getFoodByBarcode", isAuthenticated, async (req, res) => {
 	try {
 	  const { currentDate, barcode, amount, mealType, userId } = req.body;
   
@@ -233,7 +233,7 @@ router.post("/getFoodByBarcode", async (req, res) => {
 });
 
 // make get route that get UserSpecsHistory object for current date and userId (userId from params)
-router.get("/userSpecsHistory/:userId", async (req, res) => {
+router.get("/userSpecsHistory/:userId", isAuthenticated, async (req, res) => {
 	try {
 		const { userId } = req.params;
 		const currentDate = moment().format("YYYY-MM-DD");
@@ -257,9 +257,8 @@ router.get("/userSpecsHistory/:userId", async (req, res) => {
 	}
 });
 
-
 // make route that deletes food object from database based on currentDate, userId, Barcode, MealId
-router.post("/deleteFood", async (req, res) => {
+router.post("/deleteFood", isAuthenticated, async (req, res) => {
 	try {
 	  const { userId, barcode, mealId, currentDate } = req.body;
 	  console.log(userId, barcode, mealId, currentDate);
@@ -337,11 +336,8 @@ router.post("/deleteFood", async (req, res) => {
 	}
 });
 
-
-
-
 // Get meals and specific food data for each meal
-router.get("/getUserDiary", async (req, res) => {
+router.get("/getUserDiary", isAuthenticated, async (req, res) => {
 	const { userId, date } = req.query;
 
 	// Query database for all meals that match the userId and date
@@ -371,7 +367,7 @@ router.get("/getUserDiary", async (req, res) => {
 });
 
 // simple route to create a UserSpecs document in the database
-router.post("/createUserSpecsCurrent/:id", async (req, res) => {
+router.post("/createUserSpecsCurrent/:id", isAuthenticated, async (req, res) => {
 	try {
 		await UserSpecsCurrent.create(req.body);
 		res.status(201).json({ message: "User specs current created" });
@@ -382,7 +378,7 @@ router.post("/createUserSpecsCurrent/:id", async (req, res) => {
 });
 
 //route that get the UserSpecsCurrent document in the database
-router.get("/checkUserSpecs/:id", async (req, res) => {
+router.get("/checkUserSpecs/:id", isAuthenticated, async (req, res) => {
 	console.log("hello");
 	try {
 		const userSpecs = await UserSpecsCurrent.findOne({ userId: req.params.id });
@@ -398,7 +394,7 @@ router.get("/checkUserSpecs/:id", async (req, res) => {
 });
 
 //route to update UserSpecsCurrent document in the database
-router.post("/updateUserSpecsCurrent/:id", async (req, res) => {
+router.post("/updateUserSpecsCurrent/:id", isAuthenticated, async (req, res) => {
 	try {
 		console.log(req.params.id);
 		await UserSpecsCurrent.findOneAndUpdate(
@@ -413,7 +409,7 @@ router.post("/updateUserSpecsCurrent/:id", async (req, res) => {
 });
 
 // create get route that checks if user already has userSpecHistory for the date, if not create it
-router.get("/getUserHistory/:id", async (req, res) => {
+router.get("/getUserHistory/:id", isAuthenticated, async (req, res) => {
 	// get current date in format YYYY-MM-DD and userId from params
 	const currentDate = new Date().toISOString().slice(0, 10);
 	// const userId = req.params.id;
