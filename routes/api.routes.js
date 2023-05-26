@@ -486,6 +486,19 @@ router.post(
         { userId: req.params.id },
         req.body
       );
+
+      const currentDate = new Date().toISOString().slice(0, 10);
+
+      // update userSpecsHistory document
+      const userSpecsHistory = await UserSpecsHistory.findOneAndUpdate(
+        { userId: req.params.id, date: currentDate },
+        req.body
+      );
+
+
+
+
+
       res.status(200).json({ message: "User specs current updated" });
     } catch (error) {
       console.error(error);
