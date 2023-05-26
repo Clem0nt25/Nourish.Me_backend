@@ -462,10 +462,11 @@ Meal model
 
 The url to the repository and to the deployed project
 
-[Client repository Link](https://github.com/Clem0nt25/Nourish.Me_Frontend)
+[Frontend repository Link](https://github.com/Clem0nt25/Nourish.Me_Frontend)
 [Server repository Link](https://github.com/Clem0nt25/Nourish.Me_backend)
 
-[Deploy Link](https://legendary-flan-7ecf97.netlify.app/)
+[Frontend Deploy Link](https://legendary-flan-7ecf97.netlify.app/)
+[Backend Deploy Link](https://nourishmeapp.adaptable.app/)
 
 ### Slides
 
