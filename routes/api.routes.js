@@ -279,6 +279,52 @@ router.get("/userSpecsHistory/:userId", isAuthenticated, async (req, res) => {
       date: currentDate,
     });
 
+    // check if userSpecsHistory object exists
+    if (!userSpecsHistory) {
+      // if userSpecsHistory object does not exist, retrieve user specs from userSpecsCurrent
+      const userSpecsCurrent = await UserSpecsCurrent.findOne({
+        userId: userId,
+      });
+
+      // get activity level, currentWeight, goalCalories, goalProtein, goalCarbs, goalFat, goalFiber from userSpecsCurrent variable
+      const activityLevel = userSpecsCurrent.activityLevel;
+      const currentWeight = userSpecsCurrent.currentWeight;
+      const goalCalories = userSpecsCurrent.goalCalories;
+      const goalProtein = userSpecsCurrent.goalProtein;
+      const goalCarbs = userSpecsCurrent.goalCarbs;
+      const goalFat = userSpecsCurrent.goalFat;
+      const goalFiber = userSpecsCurrent.goalFiber;
+
+      // create userSpecsHistory object
+      const newUserSpecsHistory = await UserSpecsHistory.create({
+        activityLevel: activityLevel,
+        currentWeight: parseFloat(currentWeight.toFixed(1)),
+        currentCalories: 0,
+        goalCalories: goalCalories,
+        currentProtein: 0,
+        goalProtein: goalProtein,
+        currentCarbs: 0,
+        goalCarbs: goalCarbs,
+        currentFat: 0,
+        goalFat: goalFat,
+        currentFiber: 0,
+        goalFiber: goalFiber,
+        date: currentDate,
+        userId: userId,
+      });
+
+      // get userSpecsHistory object for current date and userId
+      const userSpecsHistory = await UserSpecsHistory.findOne({
+        userId: userId,
+        date: currentDate,
+      });
+
+    } else {
+      // if userSpecsHistory object exists, return userSpecsHistory object
+      console.log("UserSpecsHistory object retrieved");
+    }
+    
+
     console.log(userSpecsHistory);
 
     res.status(200).json({
