@@ -1,5 +1,7 @@
 # Nourish.Me
 
+**Click here to see the deployed app: [Nourish.Me](https://legendary-flan-7ecf97.netlify.app/)**
+
 ## Description
 
 Nourish.Me is a mobile-targeted web app allows you to always be on track of your diet. Simply search and add food everyday to track and control your nutrition intake and achieve your fitness goal with Nourish.Me.
